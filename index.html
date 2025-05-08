@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Super Mario Mainline Game Checklist</title>
+  <style>
+    :root {
+      --bg-light: #fff;
+      --bg-dark: #1e1e1e;
+      --text-light: #000;
+      --text-dark: #fff;
+      --card-bg-light: #f9f9f9;
+      --card-bg-dark: #2c2c2c;
+    }
+
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      max-width: 600px;
+      margin: auto;
+      background: var(--bg-light);
+      color: var(--text-light);
+      transition: background 0.3s, color 0.3s;
+    }
+
+    body.dark {
+      background: var(--bg-dark);
+      color: var(--text-dark);
+    }
+
+    h1,
+    h2 {
+      margin-top: 2rem;
+    }
+
+    label {
+      display: block;
+      margin: 0.5em 0;
+    }
+
+    .progress {
+      font-weight: bold;
+      margin-bottom: 1rem;
+    }
+
+    .controls {
+      margin-top: 1rem;
+    }
+
+    .button {
+      background-image: linear-gradient(#42A1EC, #0070C9);
+      border: 1px solid #0077CC;
+      border-radius: 4px;
+      box-sizing: border-box;
+      color: #FFFFFF;
+      cursor: pointer;
+      display: inline-block;
+      font-family: "SF Pro Text", "SF Pro Icons", "AOS Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 17px;
+      font-weight: 400;
+      letter-spacing: -.022em;
+      line-height: 1.47059;
+      padding: 4px 15px;
+      text-align: center;
+      user-select: none;
+      white-space: nowrap;
+      margin: 0.5rem 0.5rem 0.5rem 0;
+    }
+
+    .button:hover {
+      background-image: linear-gradient(#51A9EE, #147BCD);
+      border-color: #1482D0;
+    }
+
+    .button:active {
+      background-image: linear-gradient(#3D94D9, #0067B9);
+      border-color: #006DBC;
+    }
+
+    .button:focus {
+      box-shadow: rgba(131, 192, 253, 0.5) 0 0 0 3px;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    .filter-toggle {
+      margin: 1rem 0;
+      cursor: pointer;
+    }
+
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <h1>Super Mario Mainline Game Checklist</h1>
+  <div class="progress" id="progress">Completed: 0%</div>
+  <div class="filter-toggle">
+    <label><input type="checkbox" id="showOnlyIncomplete"> Show only
+      incomplete</label>
+    <label><input type="checkbox" id="darkModeToggle"> Dark mode</label>
+  </div>
+  <h2>2D Platformers</h2>
+  <div id="2d-list">
+    <!-- 2D Games -->
+  </div>
+  <h2>3D Platformers</h2>
+  <div id="3d-list">
+    <!-- 3D Games -->
+  </div>
+  <div class="controls">
+    <button class="button" onclick="exportChecklist()">Export as JSON</button>
+    <button class="button" onclick="document.getElementById('importFile').click()">Import from
+      JSON</button>
+    <input type="file" id="importFile" accept=".json" onchange="importChecklist(event)">
+  </div>
+  <script>
+    // Initialize elements
+    const progressEl = document.getElementById('progress');
+    const showOnlyIncomplete = document.getElementById('showOnlyIncomplete');
+    const darkModeToggle = document.getElementById('darkModeToggle');
+
+    const games = {
+      '2d-list': [
+        ["smb1", "Super Mario Bros. (1985)"],
+        ["lost-levels", "Super Mario Bros.: The Lost Levels (1986)"],
+        ["smb2", "Super Mario Bros. 2 (1988)"],
+        ["smb3", "Super Mario Bros. 3 (1988)"],
+        ["world", "Super Mario World (1990)"],
+        ["land1", "Super Mario Land (1989)"],
+        ["land2", "Super Mario Land 2: 6 Golden Coins (1992)"],
+        ["nsmb", "New Super Mario Bros. (2006)"],
+        ["nsmbwii", "New Super Mario Bros. Wii (2009)"],
+        ["nsmb2", "New Super Mario Bros. 2 (2012)"],
+        ["nsmbu", "New Super Mario Bros. U (2012)"],
+        ["wonder", "Super Mario Bros. Wonder (2023)"]
+      ],
+      '3d-list': [
+        ["m64", "Super Mario 64 (1996)"],
+        ["sunshine", "Super Mario Sunshine (2002)"],
+        ["galaxy", "Super Mario Galaxy (2007)"],
+        ["galaxy2", "Super Mario Galaxy 2 (2010)"],
+        ["3dland", "Super Mario 3D Land (2011)"],
+        ["3dworld", "Super Mario 3D World (2013)"],
+        ["odyssey", "Super Mario Odyssey (2017)"]
+      ]
+    };
+
+    // Function to render checkboxes
+    function renderCheckboxes() {
+      Object.entries(games).forEach(([sectionId, gameList]) => {
+        const container = document.getElementById(sectionId);
+        container.innerHTML = '';
+        gameList.forEach(([id, title]) => {
+          const label = document.createElement('label');
+          label.innerHTML = `<input type="checkbox" data-id="${id}"> ${title}`;
+          container.appendChild(label);
+        });
+      });
+
+      const checkboxes = document.querySelectorAll('input[type=checkbox][data-id]');
+      checkboxes.forEach(cb => {
+        cb.checked = localStorage.getItem(cb.dataset.id) === 'true';
+        cb.addEventListener('change', () => {
+          localStorage.setItem(cb.dataset.id, cb.checked);
+          updateProgress();
+          applyFilter();
+        });
+      });
+      updateProgress();
+    }
+
+    // Function to update progress
+    function updateProgress() {
+      const all = document.querySelectorAll('input[data-id]');
+      const done = Array.from(all).filter(cb => cb.checked);
+      const percent = Math.round((done.length / all.length) * 100);
+      progressEl.textContent = `Completed: ${percent}%`;
+    }
+
+    // Export checklist as JSON
+    function exportChecklist() {
+      const data = {
+        darkMode: localStorage.getItem('darkMode') === 'true',
+        showIncomplete: localStorage.getItem('showIncomplete') === 'true',
+        games: {}
+      };
+
+      document.querySelectorAll('input[data-id]').forEach(cb => {
+        data.games[cb.dataset.id] = cb.checked;
+      });
+
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mario_checklist.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    // Import checklist from JSON
+    function importChecklist(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (typeof data !== 'object' || Array.isArray(data)) throw new Error();
+
+          // Import game checklist
+          let validKeys = 0;
+          document.querySelectorAll('input[data-id]').forEach(cb => {
+            if (data.games && data.games.hasOwnProperty(cb.dataset.id)) {
+              cb.checked = data.games[cb.dataset.id];
+              localStorage.setItem(cb.dataset.id, cb.checked);
+              validKeys++;
+            }
+          });
+
+          if (validKeys === 0) {
+            alert('No valid game entries found in the JSON.');
+            return;
+          }
+
+          // Import settings (Dark Mode and Show Only Incomplete)
+          if (data.hasOwnProperty('darkMode')) {
+            localStorage.setItem('darkMode', data.darkMode);
+            document.body.classList.toggle('dark', data.darkMode);
+            darkModeToggle.checked = data.darkMode;
+          }
+
+          if (data.hasOwnProperty('showIncomplete')) {
+            localStorage.setItem('showIncomplete', data.showIncomplete);
+            showOnlyIncomplete.checked = data.showIncomplete;
+            applyFilter();
+          }
+
+          updateProgress();
+          applyFilter();
+        } catch (err) {
+          if (err.message === 'Unexpected token' || err.message.includes('JSON')) {
+            alert('Invalid JSON format.');
+          } else {
+            alert('Error importing checklist. Please make sure the file is valid.');
+          }
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    // Function to apply the filter to show incomplete games
+    function applyFilter() {
+      const showIncomplete = showOnlyIncomplete.checked;
+      document.querySelectorAll('input[data-id]').forEach(cb => {
+        cb.parentElement.classList.toggle('hidden', showIncomplete && cb.checked);
+      });
+    }
+
+    // When page loads, initialize preferences
+    document.addEventListener('DOMContentLoaded', () => {
+      // Apply Dark Mode from localStorage
+      const darkModePreference = localStorage.getItem('darkMode');
+      if (darkModePreference === 'true') {
+        document.body.classList.add('dark');
+        darkModeToggle.checked = true;
+      } else {
+        document.body.classList.remove('dark');
+        darkModeToggle.checked = false;
+      }
+
+      // Apply Show Only Incomplete filter from localStorage
+      const showIncompletePreference = localStorage.getItem('showIncomplete');
+      if (showIncompletePreference === 'true') {
+        showOnlyIncomplete.checked = true;
+        applyFilter();
+      } else {
+        showOnlyIncomplete.checked = false;
+        applyFilter();
+      }
+    });
+
+    // Save Dark Mode preference to localStorage
+    darkModeToggle.addEventListener('change', () => {
+      const isDarkMode = darkModeToggle.checked;
+      localStorage.setItem('darkMode', isDarkMode);
+      document.body.classList.toggle('dark', isDarkMode);
+    });
+
+    // Save Show Only Incomplete preference to localStorage
+    showOnlyIncomplete.addEventListener('change', () => {
+      const showIncomplete = showOnlyIncomplete.checked;
+      localStorage.setItem('showIncomplete', showIncomplete);
+      applyFilter();
+    });
+
+    // Initialize the checklist UI
+    renderCheckboxes();
+  </script>
+</body>
+</html>
