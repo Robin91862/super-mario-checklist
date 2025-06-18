@@ -1,0 +1,94 @@
+:root {
+    --bg-light: #fff;
+    --bg-dark: #1e1e1e;
+    --text-light: #000;
+    --text-dark: #fff;
+    --card-bg-light: #f9f9f9;
+    --card-bg-dark: #2c2c2c;
+}
+
+body {
+    font-family: sans-serif;
+    padding: 2rem;
+    max-width: 600px;
+    margin: auto;
+    background: var(--bg-light);
+    color: var(--text-light);
+    transition: background 0.3s, color 0.3s;
+}
+
+body.dark {
+    background: var(--bg-dark);
+    color: var(--text-dark);
+}
+
+h1,
+h2 {
+    margin-top: 2rem;
+}
+
+label {
+    display: block;
+    margin: 0.5em 0;
+}
+
+.progress {
+    font-weight: bold;
+    margin-bottom: 1rem;
+}
+
+.controls {
+    margin-top: 1rem;
+}
+
+.button {
+    background-image: linear-gradient(#42A1EC, #0070C9);
+    border: 1px solid #0077CC;
+    border-radius: 4px;
+    box-sizing: border-box;
+    color: #FFFFFF;
+    cursor: pointer;
+    display: inline-block;
+    font-family: "SF Pro Text", "SF Pro Icons", "AOS Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 17px;
+    font-weight: 400;
+    letter-spacing: -.022em;
+    line-height: 1.47059;
+    padding: 4px 15px;
+    text-align: center;
+    user-select: none;
+    white-space: nowrap;
+    margin: 0.5rem 0.5rem 0.5rem 0;
+}
+
+.button:hover {
+    background-image: linear-gradient(#51A9EE, #147BCD);
+    border-color: #1482D0;
+}
+
+.button:active {
+    background-image: linear-gradient(#3D94D9, #0067B9);
+    border-color: #006DBC;
+}
+
+.button:focus {
+    box-shadow: rgba(131, 192, 253, 0.5) 0 0 0 3px;
+}
+
+input[type="file"] {
+    display: none;
+}
+
+.filter-toggle {
+    margin: 1rem 0;
+    cursor: pointer;
+}
+
+.hidden {
+    display: none;
+}
+
+.controversial {
+    opacity: 0.75;
+    font-style: italic;
+}
