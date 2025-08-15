@@ -74,85 +74,90 @@ function updateProgress() {
     progressEl.textContent = `Completed: ${percent}%`;
 }
 
-// Export checklist as JSON
-function exportChecklist() {
-    const data = {
-        darkMode: localStorage.getItem('darkMode') === 'true',
-        showIncomplete: localStorage.getItem('showIncomplete') === 'true',
-        hideControversial: localStorage.getItem('hideControversial') === 'true',
-        games: {}
-    };
-
-    document.querySelectorAll('input[data-id]').forEach(cb => {
-        data.games[cb.dataset.id] = cb.checked;
-    });
-
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'mario_checklist.json';
-    a.click();
-    URL.revokeObjectURL(url);
+// Password system
+function getAllGameIds() {
+    return [
+        ...games['2d-list'].map(([id]) => id),
+        ...games['3d-list'].map(([id]) => id)
+    ];
 }
 
-// Import checklist from JSON
-function importChecklist(event) {
-    const file = event.target.files[0];
-    if (!file) return;
+// Generate password from current checklist
+function generatePassword() {
+    // Encode checked state as a binary string
+    const ids = getAllGameIds();
+    let bits = '';
+    ids.forEach(id => {
+        bits += localStorage.getItem(id) === 'true' ? '1' : '0';
+    });
+    // Encode filter settings
+    bits += localStorage.getItem('darkMode') === 'true' ? '1' : '0';
+    bits += localStorage.getItem('showIncomplete') === 'true' ? '1' : '0';
+    bits += localStorage.getItem('hideControversial') === 'true' ? '1' : '0';
 
-    const reader = new FileReader();
-    reader.onload = function (e) {
-        try {
-            const data = JSON.parse(e.target.result);
-            if (typeof data !== 'object' || Array.isArray(data)) throw new Error();
+    // Convert binary to base32 for shorter password
+    const base32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let num = BigInt('0b' + bits);
+    let password = '';
+    do {
+        password = base32[num % 32n] + password;
+        num /= 32n;
+    } while (num > 0n);
 
-            // Import game checklist
-            let validKeys = 0;
-            document.querySelectorAll('input[data-id]').forEach(cb => {
-                if (data.games && data.games.hasOwnProperty(cb.dataset.id)) {
-                    cb.checked = data.games[cb.dataset.id];
-                    localStorage.setItem(cb.dataset.id, cb.checked);
-                    validKeys++;
-                }
-            });
+    return password;
+}
 
-            if (validKeys === 0) {
-                alert('No valid game entries found in the JSON.');
-                return;
-            }
+// Decode password and apply state
+function applyPassword(pw) {
+    const base32 = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567";
+    let num = 0n;
+    for (let i = 0; i < pw.length; i++) {
+        const idx = base32.indexOf(pw[i].toUpperCase());
+        if (idx === -1) return false;
+        num = num * 32n + BigInt(idx);
+    }
+    let bits = num.toString(2).padStart(getAllGameIds().length + 3, '0');
+    if (bits.length < getAllGameIds().length + 3) return false;
 
-            // Import settings (Dark Mode, Show Only Incomplete, Hide Controversial)
-            if (data.hasOwnProperty('darkMode')) {
-                localStorage.setItem('darkMode', data.darkMode);
-                document.body.classList.toggle('dark', data.darkMode);
-                darkModeToggle.checked = data.darkMode;
-            }
+    // Apply game states
+    const ids = getAllGameIds();
+    document.querySelectorAll('input[data-id]').forEach((cb, i) => {
+        cb.checked = bits[i] === '1';
+        localStorage.setItem(cb.dataset.id, cb.checked);
+    });
+    // Apply filter settings
+    const darkMode = bits[ids.length] === '1';
+    const showIncomplete = bits[ids.length + 1] === '1';
+    const hideControversial = bits[ids.length + 2] === '1';
 
-            if (data.hasOwnProperty('showIncomplete')) {
-                localStorage.setItem('showIncomplete', data.showIncomplete);
-                showOnlyIncomplete.checked = data.showIncomplete;
-                applyFilter();
-            }
+    localStorage.setItem('darkMode', darkMode);
+    document.body.classList.toggle('dark', darkMode);
+    darkModeToggle.checked = darkMode;
 
-            if (data.hasOwnProperty('hideControversial')) {
-                localStorage.setItem('hideControversial', data.hideControversial);
-                hideControversialToggle.checked = data.hideControversial;
-                applyFilter();
-                updateProgress();
-            }
+    localStorage.setItem('showIncomplete', showIncomplete);
+    showOnlyIncomplete.checked = showIncomplete;
 
-            updateProgress();
-            applyFilter();
-        } catch (err) {
-            if (err.message === 'Unexpected token' || err.message.includes('JSON')) {
-                alert('Invalid JSON format.');
-            } else {
-                alert('Error importing checklist. Please make sure the file is valid.');
+    localStorage.setItem('hideControversial', hideControversial);
+    hideControversialToggle.checked = hideControversial;
+
+    applyFilter();
+    updateProgress();
+    return true;
+}
+
+function showPasswordPopup(mode) {
+    if (mode === 'generate') {
+        const pw = generatePassword();
+        alert("Your Save Password: " + pw);
+    } else {
+        const val = prompt("Enter Save Password:");
+        if (val !== null && val.trim() !== "") {
+            const ok = applyPassword(val.trim());
+            if (!ok) {
+                alert("Invalid password!");
             }
         }
-    };
-    reader.readAsText(file);
+    }
 }
 
 // Function to apply the filter to show incomplete games and/or hide controversial
@@ -227,3 +232,62 @@ hideControversialToggle.addEventListener('change', () => {
 
 // Initialize the checklist UI
 renderCheckboxes();
+
+// Import checklist from JSON
+function importChecklist(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = function (e) {
+        try {
+            const data = JSON.parse(e.target.result);
+            if (typeof data !== 'object' || Array.isArray(data)) throw new Error();
+
+            // Import game checklist
+            let validKeys = 0;
+            document.querySelectorAll('input[data-id]').forEach(cb => {
+                if (data.games && data.games.hasOwnProperty(cb.dataset.id)) {
+                    cb.checked = data.games[cb.dataset.id];
+                    localStorage.setItem(cb.dataset.id, cb.checked);
+                    validKeys++;
+                }
+            });
+
+            if (validKeys === 0) {
+                alert('No valid game entries found in the JSON.');
+                return;
+            }
+
+            // Import settings (Dark Mode, Show Only Incomplete, Hide Controversial)
+            if (data.hasOwnProperty('darkMode')) {
+                localStorage.setItem('darkMode', data.darkMode);
+                document.body.classList.toggle('dark', data.darkMode);
+                darkModeToggle.checked = data.darkMode;
+            }
+
+            if (data.hasOwnProperty('showIncomplete')) {
+                localStorage.setItem('showIncomplete', data.showIncomplete);
+                showOnlyIncomplete.checked = data.showIncomplete;
+                applyFilter();
+            }
+
+            if (data.hasOwnProperty('hideControversial')) {
+                localStorage.setItem('hideControversial', data.hideControversial);
+                hideControversialToggle.checked = data.hideControversial;
+                applyFilter();
+                updateProgress();
+            }
+
+            updateProgress();
+            applyFilter();
+        } catch (err) {
+            if (err.message === 'Unexpected token' || err.message.includes('JSON')) {
+                alert('Invalid JSON format.');
+            } else {
+                alert('Error importing checklist. Please make sure the file is valid.');
+            }
+        }
+    };
+    reader.readAsText(file);
+}
