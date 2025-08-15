@@ -75,6 +75,7 @@ function updateProgress() {
 }
 
 // Password system
+// NOTE: Passwords are version-dependent! If you add/remove games, old passwords will NOT restore the correct state.
 function getAllGameIds() {
     return [
         ...games['2d-list'].map(([id]) => id),
@@ -290,4 +291,26 @@ function importChecklist(event) {
         }
     };
     reader.readAsText(file);
+}
+
+// Export checklist as JSON
+function exportChecklist() {
+    const data = {
+        darkMode: localStorage.getItem('darkMode') === 'true',
+        showIncomplete: localStorage.getItem('showIncomplete') === 'true',
+        hideControversial: localStorage.getItem('hideControversial') === 'true',
+        games: {}
+    };
+
+    document.querySelectorAll('input[data-id]').forEach(cb => {
+        data.games[cb.dataset.id] = cb.checked;
+    });
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'mario_checklist.json';
+    a.click();
+    URL.revokeObjectURL(url);
 }
