@@ -9,7 +9,7 @@
 </head>
 
 <body>
-  <h1>Super Mario Mainline Game Checklist v1.3</h1>
+  <h1>Super Mario Mainline Game Checklist v1.4</h1>
   <div class="progress" id="progress">Completed: 0%</div>
   <div class="filter-toggle">
     <label><input type="checkbox" id="showOnlyIncomplete"> Show only
@@ -33,7 +33,12 @@
     <button class="button" onclick="exportChecklist()">Export as JSON</button>
     <button class="button" onclick="document.getElementById('importFile').click()">Import from JSON</button>
     <input type="file" id="importFile" accept=".json" onchange="importChecklist(event)">
+    <br>
+    <button class="button" id="submitScoreButton">Submit Completion to Leaderboard</button>
+    <a href="/leaderboard/" target="_blank"><button class="button">View Leaderboard</button></a>
   </div>
+  <br>
+  <p>By uploading a record, you agree to our <a href="/privacy/" target="_blank"><button class="button">Privacy Policy</button></a></p>
   <script src="script.js"></script>
 </body>
 

@@ -314,3 +314,51 @@ function exportChecklist() {
     a.click();
     URL.revokeObjectURL(url);
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+    const submitScoreButton = document.getElementById('submitScoreButton');
+    if (!submitScoreButton) {
+        console.error('submitScoreButton not found!');
+        return;
+    }
+
+    submitScoreButton.addEventListener('click', async () => {
+        // Calculate percentage including ALL games
+        const allCheckboxes = Array.from(document.querySelectorAll('input[data-id]'));
+        if (allCheckboxes.length === 0) {
+            alert('No games found to calculate score.');
+            return;
+        }
+
+        const done = allCheckboxes.filter(cb => cb.checked);
+        const score = Math.round((done.length / allCheckboxes.length) * 100);
+
+        // Prompt for username
+        let username = '';
+        while (!username) {
+            username = prompt("Enter your username:");
+            if (username === null) return; // user cancelled
+            username = username.trim();
+            if (!username) alert("Username cannot be empty.");
+        }
+
+        try {
+            const response = await fetch('upload.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: `username=${encodeURIComponent(username)}&score=${encodeURIComponent(score)}`
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                alert(`Record of ${score}% submitted successfully!`);
+            } else {
+                alert(`Error: ${data.error}`);
+            }
+        } catch (err) {
+            console.error(err);
+            alert('An unexpected error occurred.');
+        }
+    });
+});
